@@ -22,55 +22,7 @@ from google.appengine.api import users
 from google.appengine.ext.webapp import xmpp_handlers
 from google.appengine.ext import db
 
-
-class User(db.Model):
-  account = db.IMProperty()
-
-  def applications(self):
-    return (x.application for x in self.usermyspace_set)
-
-  @staticmethod
-  def search_by_name(user):
-    unames = User.gql("WHERE account = :1", db.IM("xmpp",user))
-    lista = [x for x in unames]
-    if len(lista) > 0:
-      return unames[0]
-    else:
-      return None
-
-class Myspaceapp(db.Model):
-  link = db.LinkProperty()
-  name = db.StringProperty()
-  nusers = db.IntegerProperty()
-  last_update = db.DateTimeProperty(auto_now_add=True)
-
-  def users(self):
-    return (x.user for x in self.usermyspace_set)
-
-  @staticmethod
-  def search_by_link(link):
-    apps = Myspaceapp.gql("WHERE link = :1", db.Link(link))
-    # gql is lazy, force the sequence
-    lista = [x for x in apps]
-    if len(lista) > 0:
-      return apps[0]
-    else:
-      return None
-    
-
-class UserMyspace(db.Model):
-  user = db.ReferenceProperty(User)
-  application = db.ReferenceProperty(Myspaceapp)
-
-  @staticmethod
-  def search_by_myspace(app):
-    apps = UserMyspace.gql("WHERE application = :1", app.key())
-    # gql is lazy, force the sequence
-    lista = [x for x in apps]
-    if len(lista) > 0:
-      return apps[0]
-    else:
-      return None
+from model import *
     
 class MainHandler(webapp.RequestHandler):
 
@@ -138,10 +90,13 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
         else:
           # if not, create it
           if not app:
+            # TODO: refact ALL OF THIS!!!
             app = Myspaceapp()
             app.link = content
-            app.name = "test app"
-            app.nusers = 0
+            app.url = content
+            app.load()
+            app.name = app.extract_app_name()
+            app.nusers = app.extract_nusers()
             app.put()
         # create the necessary connection to the user
           appuser = UserMyspace()
@@ -149,7 +104,11 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
           appuser.application = app
           appuser.put()
           message.reply("Saved " + content + " in the database")
-      except:
+      except Exception, inst:
+        e = Error()
+        e.msg = str(inst)
+        e.put()
+        #message.reply(str(inst))
         message.reply("That link is not valid!!")
     
       
@@ -161,6 +120,7 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
       list_links = "List of Links:\n"
       counter = 1
       for app in user.applications():
+        app.update_nusers()
         list_links = list_links + str(counter) + ") " + app.name + " users: " + str(app.nusers) + " link: " + str(app.link) + "\n"
         counter = counter + 1
       message.reply(list_links)
