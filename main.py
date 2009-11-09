@@ -103,7 +103,14 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
 
   def help_command(self,message=None):
     im_from = db.IM("xmpp", message.sender)
-    message.reply("Todo my friend " + str(im_from))
+    str = "\n".join(['Available commands:',
+                     '/register',
+                     '/unregister',
+                     '/track url',
+                     '/list',
+                     '/forget idx',
+                     '/help'])
+    message.reply(str)
 
 
   def unhandled_command(self, message=None):
