@@ -12,10 +12,10 @@ sys.stdout = streamWriter(sys.stdout)
 class SoupHelpers:
 
     def __init__(self,url):
-        self.url = url
+        self.link = url
 
     def load(self):
-        data = urllib2.urlopen(self.url).read()
+        data = urllib2.urlopen(self.link).read()
         # the myspace html is malformed, quick hack to fix that problem
         ar = data.split("<table id=\"mainLayout\">")
         if len(ar) != 2:

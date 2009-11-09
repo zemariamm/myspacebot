@@ -23,7 +23,7 @@ from google.appengine.ext.webapp import xmpp_handlers
 from google.appengine.ext import db
 
 from model import *
-    
+from wrappers import *    
 class MainHandler(webapp.RequestHandler):
 
   def get(self):
@@ -43,87 +43,62 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
       u.put()
       message.reply("Hello " + str(u.account.address) + " you've been registered")
 
+  @require_user
   def unregister_command(self,message=None):
-    user = User.search_by_name(message.sender)
-    if user:
-      db.delete(user)
+    db.delete(self.user)
     message.reply("You've been unregistered")
 
+  @require_user
+  @require_valid_number
   def forget_command(self,message=None):
-    user = User.search_by_name(message.sender)
-    if not user:
-      message.reply("You have to register first!!")
-    content = message.arg
-    try:
-      index = int(content)
-      # the user send the nth element, not the postion
-      index = index - 1
-      # force the lazy sequence
-      list_apps = [x for x in user.applications()]
-      # check if index is inbounds 
-      if index >= len(list_apps) or index < 0:
-        message.reply("That number is not valid!!")
-      else:
-        # the app to remove from users <=> apps list
-        app_rem = list_apps[index]
-        # the link to remove from the many-to-many table
-        app_connection = UserMyspace.search_by_myspace(app_rem)
-        db.delete(app_connection)
-        message.reply("You've stopped tracking: " + str(app_rem.link))
-    except Exception:
-      message.reply("You must send an integer indexing one element of the list")
-        #message.reply("Debug: should never get here")
+    # force the lazy sequence
+    list_apps = [x for x in self.user.applications()]
+    # check if index is inbounds 
+    if self.index >= len(list_apps) or self.index < 0:
+      message.reply("That number is not valid!!")
+    else:
+      # the app to remove from users <=> apps list
+      app_rem = list_apps[self.index]
+      # the link to remove from the many-to-many table
+      app_connection = UserMyspace.search_by_myspace(app_rem)
+      db.delete(app_connection)
+      message.reply("You've stopped tracking: " + str(app_rem.link))
 
-
+  @require_user
+  @require_link
   def track_command(self,message=None):
-    user = User.search_by_name(message.sender)
-    content = message.arg
-    if not user or not content:
-      message.reply("You must register and send a valid message!!")
-      # check if app is in the DB
-    else:
-      try:
-        app = Myspaceapp.search_by_link(content)
-        if len(filter(lambda x: x.link == content,user.applications())) > 0 :
-          # application already in user list!!
-          message.reply("This application was already in your list!!")
-        else:
-          # if not, create it
-          if not app:
-            # TODO: refact ALL OF THIS!!!
-            app = Myspaceapp()
-            app.link = content
-            app.url = content
-            app.load()
-            app.name = app.extract_app_name()
-            app.nusers = app.extract_nusers()
-            app.put()
+    try:
+      app = Myspaceapp.search_by_link(self.content)
+      if len(filter(lambda x: x.link == self.content,self.user.applications())) > 0 :
+        # application already in user list!!
+        message.reply("This application was already in your list!!")
+      else:
+        # if not, create it
+        if not app:
+          app = Myspaceapp()
+          app.on_load(self.content)
+          app.put()
         # create the necessary connection to the user
-          appuser = UserMyspace()
-          appuser.user = user
-          appuser.application = app
-          appuser.put()
-          message.reply("Saved " + content + " in the database")
-      except Exception, inst:
-        e = Error()
-        e.msg = str(inst)
-        e.put()
-        # message.reply(str(inst))
-        message.reply("That link is not valid!!")
+        appuser = UserMyspace()
+        appuser.user = self.user
+        appuser.application = app
+        appuser.put()
+        message.reply("Saved " + self.content + " in the database")
+    except Exception, inst:
+      e = Error()
+      e.msg = str(inst)
+      e.put()
+      message.reply("That link is not valid!!")
     
-      
+  @require_user
   def list_command(self,message=None):
-    user = User.search_by_name(message.sender)
-    if not user:
-      message.reply("You must register first!!")
-    else:
-      list_links = "List of Links:\n"
-      counter = 1
-      for app in user.applications():
-        app.update_nusers()
-        list_links = list_links + str(counter) + ") " + app.name + " users: " + str(app.nusers) + " link: " + str(app.link) + "\n"
-        counter = counter + 1
-      message.reply(list_links)
+    list_links = "List of Links:\n"
+    counter = 1
+    for app in self.user.applications():
+      app.update_nusers()
+      list_links = list_links + str(counter) + ") " + app.name + " users: " + str(app.nusers) + " link: " + str(app.link) + "\n"
+      counter = counter + 1
+    message.reply(list_links)
 
 
   def help_command(self,message=None):

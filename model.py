@@ -28,12 +28,18 @@ class Myspaceapp(db.Model, SoupHelpers ):
   nusers = db.IntegerProperty()
   last_update = db.DateTimeProperty(auto_now_add=True)
 
+  def on_load(self,link):
+      self.link = link
+      self.load()
+      self.name = self.extract_app_name()
+      self.nusers = self.extract_nusers()
+      
   def update_nusers(self):
       update_after = timedelta(minutes=1)
       current = datetime.now()
       elapsed = current - self.last_update
       if elapsed > update_after:
-          self.url = self.link
+          #self.url = self.link
           self.load()
           self.nusers = self.extract_nusers()
           self.last_update = current
