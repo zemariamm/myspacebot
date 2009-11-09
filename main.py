@@ -108,7 +108,7 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
         e = Error()
         e.msg = str(inst)
         e.put()
-        #message.reply(str(inst))
+        # message.reply(str(inst))
         message.reply("That link is not valid!!")
     
       

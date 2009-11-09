@@ -1,5 +1,5 @@
 import sys
-sys.path.append("BeautifulSoup-3.1.0.1/")
+# sys.path.append("BeautifulSoup-3.1.0.1/")
 from BeautifulSoup import BeautifulSoup
 import codecs
 import urllib2
@@ -31,10 +31,8 @@ class SoupHelpers:
 
     def extract_app_name(self):
         el = self.soup.find('div', id="profile_appdetail")
-        lista = el.h4.contents 
-        # TODO: quick hack, need to look at this later
-        # well I know it's in the first postion
-        return str(lista[0])
+        lista = el.h4.contents
+        return lista[0].__unicode__()
 
     def remove_tags(self,tag):
         tags = self.soup.findAll(tag)
@@ -50,6 +48,7 @@ class SoupHelpers:
 
 
 #obj =  SoupHelpers("http://www.myspace.com/505895944")
+#obj = SoupHelpers("http://www.myspace.com/478442441")
 #obj.load()
 #print obj.extract_app_name()
 #print obj.extract_nusers()
