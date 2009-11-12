@@ -1,9 +1,12 @@
 from google.appengine.ext import db 
 from model import *
+from cachemodel import *
 
 def require_user(f):
     def load_or_die(obj,message=None):
-        user = User.search_by_name(message.sender)
+        # check the cache first
+        user = ModelHelpers.search_user(obj.memcache,message.sender)
+        # user = User.search_by_name(message.sender)
         if user:
             obj.user = user
             return f(obj,message)

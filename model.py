@@ -3,16 +3,26 @@ from google.appengine.api import users
 from datetime import datetime, timedelta
 import sys
 from bsoup import SoupHelpers
+from google.appengine.api import memcache
 
-# class Error(db.Model):
-#     msg = db.StringProperty()
 
 class User(db.Model):
-    account = db.IMProperty()
+    # account = db.IMProperty()
+    account = db.StringProperty()
+
+  def applications_force(self):
+    return (x.application.key() for x in self.usermyspace_set)
+
 
   def applications(self):
-    return (x.application for x in self.usermyspace_set)
-
+      apps = memcache.get(self.key())
+      if apps:
+          return apps
+      else:
+          # get from the DB and add them to memcache
+          lista = [x for x in user.applications_force()]
+          memcache.put(self.key(),lista)
+  
   @staticmethod
   def search_by_name(user):
     unames = User.gql("WHERE account = :1", db.IM("xmpp",user))

@@ -32,20 +32,20 @@ class MainHandler(webapp.RequestHandler):
 class XMPPHandler(xmpp_handlers.CommandHandler):
 
   def register_command(self,message=None):
-    user = User.search_by_name(message.sender)
+    # user = User.search_by_name(message.sender)
+    user = ModelHelpers.search_user(message.sender)
     if user:
       #if user is already in the database
       message.reply("You " + str(user.account.address) + " are already registered")
     else:
       # if not, add the user to the DB and send the appropriate msg
-      u = User()
-      u.account = db.IM("xmpp",message.sender)
-      u.put()
-      message.reply("Hello " + str(u.account.address) + " you've been registered")
+      u = ModelHelpers.add_user(message.sender)
+      message.reply("Hello " + str(u.account) + " you've been registered")
 
   @require_user
   def unregister_command(self,message=None):
-    db.delete(self.user)
+    # db.delete(self.user)
+    ModelHelpers.delete_user(self.user)
     message.reply("You've been unregistered")
 
   @require_user
@@ -59,10 +59,10 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
     else:
       # the app to remove from users <=> apps list
       app_rem = list_apps[self.index]
-      # the link to remove from the many-to-many table
-      app_connection = UserMyspace.search_by_myspace(app_rem)
-      db.delete(app_connection)
-      message.reply("You've stopped tracking: " + str(app_rem.link))
+      ModelHelpers.delete_application_from(self.user,apprem)
+      # app_connection = UserMyspace.search_by_myspace(app_rem)
+      # db.delete(app_connection)
+      message.reply("You've stopped tracking: " + str(app_rem))
 
   @require_user
   @require_link
@@ -85,9 +85,6 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
         appuser.put()
         message.reply("Saved " + self.content + " in the database")
     except Exception, inst:
-      #e = Error()
-      #e.msg = str(inst)
-      #e.put()
       message.reply("That link is not valid!!")
     
   @require_user
