@@ -1,0 +1,10 @@
+in order to do direct lookups, you must have references to the entities' keys.
+
+            counter = SimpleCounterShard(key_name=shard_name)
+
+
+When an entity is first created, you have the option of passing in a string to use as the entity's key name. (in our case, the JID)
+
+is important to note that you can only expect to update any single entity or entity group about five times a second.
+
+

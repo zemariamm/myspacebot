@@ -4,11 +4,11 @@ from datetime import datetime, timedelta
 import sys
 from bsoup import SoupHelpers
 
-class Error(db.Model):
-    msg = db.StringProperty()
+# class Error(db.Model):
+#     msg = db.StringProperty()
 
 class User(db.Model):
-  account = db.IMProperty()
+    account = db.IMProperty()
 
   def applications(self):
     return (x.application for x in self.usermyspace_set)

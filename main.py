@@ -85,9 +85,9 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
         appuser.put()
         message.reply("Saved " + self.content + " in the database")
     except Exception, inst:
-      e = Error()
-      e.msg = str(inst)
-      e.put()
+      #e = Error()
+      #e.msg = str(inst)
+      #e.put()
       message.reply("That link is not valid!!")
     
   @require_user
