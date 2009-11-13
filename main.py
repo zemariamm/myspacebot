@@ -92,7 +92,6 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
     list_links = "List of Links:\n"
     counter = 1
     for appkey in self.user.applications():
-      logging.error("Looking for : " + str(appkey))
       app = Myspaceapp.get_by_key_name(str(appkey))
       app.update_nusers()
       list_links = list_links + str(counter) + ") " + app.name + " users: " + str(app.nusers) + " link: " + str(app.link) + "\n"
