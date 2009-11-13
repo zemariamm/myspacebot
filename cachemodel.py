@@ -1,17 +1,18 @@
 from google.appengine.api import memcache
-from models import *
+from model import *
 from google.appengine.api import memcache
+import logging
+
+logging.getLogger().setLevel(logging.DEBUG)
 
 class ModelHelpers():
-    
-
     @staticmethod 
     def add_user(user):
-        u = User(key_name=user)
+        u = User(key_name=str(user))
         u.account = user
         u.put()
         # loads the user in the memcache
-        memcache.put(user,[])
+        memcache.set(str(user),[])
         
         return u
         # force the sequence
@@ -24,38 +25,43 @@ class ModelHelpers():
     # deletes the user from the DB and from memcache
     @staticmethod
     def delete_user(userobj):
+        memcache.set(str(userobj.key()),None)
         db.delete(userobj)
-        memcache.put(userobj,None)
-
-    @staticmethod
-    def delete_application_from(useobj,appkey):
-        # clear from the many-to-many in db
-        # clear from the memcache
-        raise 'Not implemented yet'
-    
-    @staticmethod
-    def search_user(user):
-        u = memcache.get(user)
-        if u:
-            return u
-        else:
-            u = User.get_by_key_name(user)
-            if u:
-                # load the user and it's apps in the memcache
-                u.applications()
-                return u
-            else:
-                return None
-
-    @staticmethod
-    def search_application(link):
         
 
     @staticmethod
-    def add_application(memcache,link):
+    def delete_application_from(userobj,app):
+        # clear from the many-to-many in db
+        appu = UserMyspace.search_by_appuser(app,userobj)
+        logging.error("OK, object ready to delete")
+        logging.error(str(appu))
+        db.delete(appu)
+        # reload apps in cache
+        userobj.applications_reload()
+        # clear from the memcache
+        #raise 'Not implemented yet'
+    
+    @staticmethod
+    def search_user(user):
+        user = User.get_by_key_name(str(user))
+        if user:
+            user.applications()
+        return user
+
+    @staticmethod
+    def search_application(link):
+        app = Myspaceapp.get_by_key_name(link)
+        if app:
+            return app
+        else:
+            return None
+
+    @staticmethod
+    def add_application(link):
         app = Myspaceapp(key_name=link)
         app.on_load(link)
         app.put()
+        return app
         # do not put it in memcache
         # only when a user adds - maybe change this in the future
     

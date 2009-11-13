@@ -5,8 +5,7 @@ from cachemodel import *
 def require_user(f):
     def load_or_die(obj,message=None):
         # check the cache first
-        user = ModelHelpers.search_user(obj.memcache,message.sender)
-        # user = User.search_by_name(message.sender)
+        user = ModelHelpers.search_user(message.sender)
         if user:
             obj.user = user
             return f(obj,message)
@@ -35,6 +34,6 @@ def require_valid_number(f):
                 index = index - 1
                 obj.index = index
                 return f(obj,message)
-            except Exception:
+            except Exception, inst:
                 message.reply("That number is not valid!!")
     return check_number            

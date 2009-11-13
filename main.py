@@ -36,7 +36,7 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
     user = ModelHelpers.search_user(message.sender)
     if user:
       #if user is already in the database
-      message.reply("You " + str(user.account.address) + " are already registered")
+      message.reply("You " + str(user.account) + " are already registered")
     else:
       # if not, add the user to the DB and send the appropriate msg
       u = ModelHelpers.add_user(message.sender)
@@ -55,34 +55,34 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
     list_apps = [x for x in self.user.applications()]
     # check if index is inbounds 
     if self.index >= len(list_apps) or self.index < 0:
-      message.reply("That number is not valid!!")
+      message.reply("That number is not valid!!3")
     else:
       # the app to remove from users <=> apps list
-      app_rem = list_apps[self.index]
-      ModelHelpers.delete_application_from(self.user,apprem)
+      app_rem = Myspaceapp.get_by_key_name(list_apps[self.index])
+      ModelHelpers.delete_application_from(self.user,app_rem)
       # app_connection = UserMyspace.search_by_myspace(app_rem)
       # db.delete(app_connection)
-      message.reply("You've stopped tracking: " + str(app_rem))
+      message.reply("You've stopped tracking: " + str(app_rem.link))
 
   @require_user
   @require_link
   def track_command(self,message=None):
     try:
-      app = Myspaceapp.search_by_link(self.content)
-      if len(filter(lambda x: x.link == self.content,self.user.applications())) > 0 :
+      # app = Myspaceapp.search_by_link(self.content)
+      app = ModelHelpers.search_application(self.content)
+      if len(filter(lambda x: Myspaceapp.get_by_key_name(x).link == self.content,self.user.applications())) > 0 :
         # application already in user list!!
         message.reply("This application was already in your list!!")
       else:
         # if not, create it
         if not app:
-          app = Myspaceapp()
-          app.on_load(self.content)
-          app.put()
-        # create the necessary connection to the user
+          app = ModelHelpers.add_application(self.content)
         appuser = UserMyspace()
         appuser.user = self.user
         appuser.application = app
         appuser.put()
+        # load into memcache
+        self.user.applications_reload()
         message.reply("Saved " + self.content + " in the database")
     except Exception, inst:
       message.reply("That link is not valid!!")
@@ -91,7 +91,9 @@ class XMPPHandler(xmpp_handlers.CommandHandler):
   def list_command(self,message=None):
     list_links = "List of Links:\n"
     counter = 1
-    for app in self.user.applications():
+    for appkey in self.user.applications():
+      logging.error("Looking for : " + str(appkey))
+      app = Myspaceapp.get_by_key_name(str(appkey))
       app.update_nusers()
       list_links = list_links + str(counter) + ") " + app.name + " users: " + str(app.nusers) + " link: " + str(app.link) + "\n"
       counter = counter + 1
